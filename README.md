@@ -37,12 +37,7 @@
 <details>
   <summary>Table of Contents</summary>
   <ol>
-    <li>
-      <a href="#about-the-project">About The Project</a>
-      <ul>
-        <li><a href="#resources">Resources</a></li>
-      </ul>
-    </li>
+    <li><a href="#about-the-project">About The Project</a></li>
     <li>
       <a href="#getting-started">Getting Started</a>
       <ul>
@@ -50,7 +45,17 @@
         <li><a href="#installation">Installation</a></li>
       </ul>
     </li>
-    <li><a href="#usage">Usage</a></li>
+    <li>
+      <a href="#usage">Usage</a>
+      <ul>
+        <li><a href="#bsf_quote(price,strike,time,rate,iv,divyield)">BSF_QUOTE</a></li>
+        <li><a href="#BSF_DELTA">BSF_DELTA</a></li>
+        <li><a href="#BSF_GAMMA">BSF_GAMMA</a></li>
+        <li><a href="#BSF_THETA">BSF_THETA</a></li>
+        <li><a href="#BSF_VEGA">BSF_VEGA</a></li>
+        <li><a href="#BSF_RHO">BSF_RHO</a></li>
+      </ul>
+    </li>
     <li><a href="#contributing">Contributing</a></li>
     <li><a href="#license">License</a></li>
     <li><a href="#contact">Contact</a></li>
@@ -66,7 +71,7 @@
 
 The inspiration for this App Scripts was my curiosity in simulating different option pricing scenarios to better understand contract pricing. While calculating BSM is fairly trivial, I wanted access to functions so I can compare different scenarios, for example, how much would implied volatility need to increase for the option to react similarly if the underlying increased $1. 
 
-If that sounds interesting, please read the docs to understand the function and their limitations, which there are a lot of. However, for simple scenario comparison, the data is adaquate.
+If that sounds interesting, please read the docs to understand the function and their limitations, which there are a lot of. However, for simple scenario comparison, the data is adequate.
 
 
 <!-- Here's a blank template to get started: To avoid retyping too much info. Do a search and replace with your text editor for the following: `github_username`, `repo_name`, `twitter_handle`, `linkedin_username`, `email`, `email_client`, `project_title`, `project_description` -->
@@ -81,7 +86,7 @@ All functions were written within Google App Scripts and have to be added manual
 The following papers were used to create the functions:
 * [Theory of rational Option Pricing - Merton](http://www.people.hbs.edu/rmerton/theory%20of%20rational%20option%20pricing.pdf)
 
-The folowing link helped in the original creation of the script:
+The following link helped in the original creation of the script:
 * [Excel implementation of Black-Scholes](https://excelatfinance.com/xlf17/xlf-black-scholes-google-sheets.php)
 
 If you need a general overview of option greeks:
@@ -91,59 +96,144 @@ If you need a general overview of option greeks:
 
 <p align="right">(<a href="#top">back to top</a>)</p>
 
+-----------------------
 
+<br>
 
 <!-- GETTING STARTED -->
 ## Getting Started
 
 If you have never worked with Google App Scripts, don't worry, its straight forward and there a lot of documentation on the internet. So much so, that instead of giving step-by-step instructions, I'm going to link to some of the best guides I have found.
 
-#### What is Google App Scripts
+### Prerequisites
+
+If you are not familiar with google Scripts, here are some resources to get you started.
+
 - [Google App Scripts Home](https://developers.google.com/apps-script)
 - [Beginner's Guide](https://www.benlcollins.com/apps-script/google-apps-script-beginner-guide/)
 - [Custom Function Documentation](https://spreadsheet.dev/writing-custom-functions-for-google-sheets)
 
-#### How to Add App Scripts to Sheets
-- [Comprehensive guide](https://spreadsheetpoint.com/google-sheets-script/)
-- [Video Tutorial](https://www.youtube.com/watch?v=Nd3DV_heK2Q)
 
-
-------
-
-### Prerequisites
-
-This is an example of how to list things you need to use the software and how to install them.
-* npm
-  ```sh
-  npm install npm@latest -g
-  ```
+<br>
 
 ### Installation
 
-1. Get a free API Key at [https://example.com](https://example.com)
-2. Clone the repo
-   ```sh
-   git clone https://github.com/BardsWork/bsm-sheets.git
-   ```
-3. Install NPM packages
-   ```sh
-   npm install
-   ```
-4. Enter your API in `config.js`
-   ```js
-   const API_KEY = 'ENTER YOUR API';
-   ```
+Instead of creating a tutorial, here are some I've found useful to install App Scripts into your sheet.
+
+- [Comprehensive guide](https://spreadsheetpoint.com/google-sheets-script/)
+- [Video Tutorial](https://www.youtube.com/watch?v=Nd3DV_heK2Q)
 
 <p align="right">(<a href="#top">back to top</a>)</p>
 
+____
 
+<br>
 
 <!-- USAGE EXAMPLES -->
 ## Usage
 
-Use this space to show useful examples of how a project can be used. Additional screenshots, code examples and demos work well in this space. You may also link to more resources.
+There are 2 primary ways to interact with the script: retrieving the entire quote for the desired strike (call & put) or retrieving specific greeks for your calculations (i.e. call price or gamma for put, etc.) Each function is documented below.
 
-_For more examples, please refer to the [Documentation](https://example.com)_
+<br>
+
+### BSF_QUOTE(price,strike,time,rate,iv,divYield)
+
+Returns a two row array with complete quote for puts and calls.
+
+| Name | Description |
+| ---- | ----------- |
+| price | *number*<br>Spot price of underlying stock. |
+| strike | *number*<br>Selected option strike. |
+| time | *number*<br>Time to maturity (expiry - today / 365). |
+| rate | *number*<br>Suggested default: 10 year bond rate ("TNX"). |
+| iv | *number*<br>Implied volatility from your broker or Yahoo Finance. |
+| divYield | *number*<br>Annualized dividend yield for the company. |
+
+<br>
+
+#### Returns
+
+Two dimensional array with price and Greeks for CALL and PUT options.
+
+_Return format:_
+|         | Index 0   | Index 1 | Index 2 | Index 3 |Index 4  | Index 5 |
+|---------|----       |----     |----     |----     |----     |---      |
+| Array 1 | CALL PRICE| DELTA   | GAMMA   | Theta   | VEGA    | RHO     |
+| Array 2 | PUT PRICE | DELTA   | GAMMA   | Theta   | VEGA    | RHO     |
+
+<br>
+
+_Return types:_
+|Price |Delta |Gamma |Theta |Vega |Rho |
+|------|------|------|------|-----|----|
+|number|number|number|number|number|number|
+
+<br>
+
+-----------------------
+
+<br>
+
+### BSF_GAMMA ( nd1, price, iv, time )
+
+Returns Gamma value for option. Gamma exposure is regardless if the option is a call or a put.
+
+| Name | Description |
+| ---- | ----------- |
+| nd1 | *number*<br>normal distribution of the first derivative. |
+| price | *number*<br>Spot price of underlying stock. |
+| strike | *number*<br>Selected option strike. |
+| time | *number*<br>Time to maturity (expiry - today / 365). |
+| rate | *number*<br>Suggested default: 10 year bond rate ("TNX"). |
+| iv | *number*<br>Implied volatility from your broker or Yahoo Finance. |
+
+<br>
+
+#### Returns
+
+Gamma value for either leg (call or put) of the option contract. 
+
+| Name | Description |
+| ---- | ----------- |
+| gamma | *float*<br>The speed at which the value of Delta changes. |
+
+<br>
+
+-----------------------
+
+<br>
+
+
+### BSF_THETA ( position, nd1, nsd_d2, price, strike, time, rate, iv )
+
+Returns theta value for specified option.
+
+| Name | Description |
+| ---- | ----------- |
+| position | *string*<br>Put or Call option. |
+| nd1 | *number*<br>normal distribution. |
+| nsd_d2 | *number*<br>Time to maturity (expiry - today / 365). |
+| price | *number*<br>Suggested default: 10 year bond rate ("TNX"). |
+| strike | *number*<br>Implied volatility from your broker or Yahoo Finance. |
+| time | *number*<br>Annualized dividend yield for the company. |
+| rate | *number*<br>Annualized dividend yield for the company. |
+| iv | *number*<br>Annualized dividend yield for the company. |
+
+<br>
+
+#### Returns
+
+The theta value for the option contract.
+
+| Name | Description |
+| ---- | ----------- |
+| theta | *float*<br>The "time decay" of an option contract. |
+
+<br>
+
+-----------------------
+
+<br>
 
 <p align="right">(<a href="#top">back to top</a>)</p>
 
