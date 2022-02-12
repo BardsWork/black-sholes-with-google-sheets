@@ -23,7 +23,7 @@
     <img src="images/bsm-logo.png" alt="Logo" width="80" height="80">
   </a>
 
-<h3 align="center">Get the Greeks inside your Sheets!</h3>
+<h3 align="center">Get the Greeks in your Sheets!</h3>
 
   
 [View Demo][demo-url] · [Report Bug][issues-url] · [Request a Feature][issues-url]
