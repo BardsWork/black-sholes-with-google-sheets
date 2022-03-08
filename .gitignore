@@ -21,3 +21,4 @@ npm-debug.log
 *.db
 
 # PROJECT SPECIFIC
+backup.gs
