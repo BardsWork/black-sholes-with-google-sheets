@@ -10,33 +10,6 @@
  * License: MIT
  * 
  *
- * 
- * DESCRIPTION
- * ============================================
- * Custom function to calculate option pricing based on American Option 
- * Black Scholes model. 
- * 
- *
- * 
- * LEGEND
- * ============================================
- * S  -> Price of the underlying stock
- * K  -> Option strike price
- * r  -> risk free interest rate (30 day t-bill)
- * iv -> implied volatility
- * divYield -> divident yield
- * t  -> time to expiration (maturity date, annualized)
- * N  -> standard normal cumulative distribution function
- * 
- * 
- * 
- * NOTES
- * ============================================
- * Yahoo Option API: https://query2.finance.yahoo.com/v7/finance/options/amd
- * returns JSON
- * 
- * TODO: It seems that my rate is incorrect. It should be compounded over the year, not just taken the rate. 
- *
  *
  *
  * VERSIONS
@@ -53,20 +26,7 @@
  * 0.1.0 Project setup.
  *
  *
- *
- * REFERENCE, NOTES, & RESEARCH
- * ============================================
- * This paper updated the BSM to handle openended American options & divident paying stocks/etfs.
- * http://www.people.hbs.edu/rmerton/theory%20of%20rational%20option%20pricing.pdf
- *
- * 
- * EXCEL implementation of BSM. Used as starting point. Careful when reading as
- * this is "pure" Black-Scholes and does not account for Yield.
- * https://excelatfinance.com/xlf17/xlf-black-scholes-google-sheets.php
- */
-
-
-
+ 
 /****************************************************************
  *                                                              *
  *                         CODE BELOW                           *
@@ -75,7 +35,7 @@
  ****************************************************************/
 
 
-// PRIVATE FUNCTIONS
+// DERIVATIVES 
 // ============================================
 
 
@@ -162,6 +122,10 @@ function _calculateND1(d1){
 }
 
 
+// PRICE 
+// ============================================
+
+
 /**
  * The accuracy of this function depends on volatility by way of nsd variables.
  * I should see how to pull IV from an API/scraping to reduce entry within the actual sheet.
@@ -188,24 +152,6 @@ function _calculateND1(d1){
   return _price;
 }
 
-/**
- * Groups calculating derivatives into a single call.
- *
- * @param price     {float} current price of underlying
- * @param strike    {float} strike price
- * @param time      {float} time until maturity, anualized
- * @param rate      {float} 1 month interest rate
- * @param iv        {float} implied volatility
- * @param divYield  {float} divident yield, annualized. Sraped from FinViz.
- * @return {array}
- */
-function _calcDerivs(price, strike, time, rate, iv, divYield){
-  var _d1 = _calcuatD1(price, strike, time, rate, iv, divYield);
-  var _d2 = _calculateD2(d1, iv, time);
-
-  return [_d1, _d2];
-}
-
 
 // GREEKS CALCULATIONS
 // ============================================
@@ -223,7 +169,7 @@ function _calcDerivs(price, strike, time, rate, iv, divYield){
  * @param iv        {float} implied volatility
  * @returns {float}
  */
-function BSM_THETA(type = "CALL", nd1, nsd_d2, price, strike, time, rate, iv){  
+function _calcTheta(type = "CALL", nd1, nsd_d2, price, strike, time, rate, iv){  
   var _theta;
 
   if( type === "CALL" ){
@@ -244,7 +190,7 @@ function BSM_THETA(type = "CALL", nd1, nsd_d2, price, strike, time, rate, iv){
  * @param rate      {float} 1 month interest rate
  * @returns {float}
  */
-function BSM_RHO(type = "CALL", nsd_d2, strike, time, rate){
+function _calcRho(type = "CALL", nsd_d2, strike, time, rate){
   var _rho;
 
   if( type === "CALL" ){
@@ -264,7 +210,7 @@ function BSM_RHO(type = "CALL", nsd_d2, strike, time, rate){
  * @param time      {float} time until maturity, anualized
  * @returns 
  */
-function BSM_GAMMA(nd1, price, iv, time){
+function _calcGamma(nd1, price, iv, time){
   return nd1 / (price * iv * Math.sqrt(time));
 }
 
@@ -284,15 +230,82 @@ function BSM_GAMMA(nd1, price, iv, time){
  * 
  * @returns {float}
  */
-function BSM_VEGA(nd1 = 0, price, strike, time, rate, iv, divYield){
+function _calcVega(nd1 = 0, price, strike, time, rate, iv, divYield){
 
   if( nd1 === 0 ){
     // d1 is index 0
-    var _derivs = _calcDerivs(price, strike, time, rate, iv, divYield);
-    nd1 = _calculateND1(_derivs[0]);
+    d1 = _calcuatD1(price, strike, time, rate, iv, divYield);    
+    nd1 = _calculateND1(d1);
   }
 
   return 0.01 * price * Math.sqrt(time) * nd1;
+}
+
+
+/**
+ * Consolidated full quote for price and greeks for both, calls and puts.
+ * Function will return a 2D array of values, that fill up 2 rows and 6 columns.
+ * 
+ * Example Return:
+ *  CALL PRICE | DELTA | GAMMA | THETA | VEGA | RHO
+ *  PUT PRICE  | DELTA | GAMMA | THETA | VEGA | RHO
+ * 
+ * @param userInput {object}  User input values from sheet
+ * @param derivs    {object}  Calculated derivates
+ * @returns 
+ */
+function _fullQuote(userInput, derivs){
+  const optionChain = [[],[]];
+  
+  // Vega and Gama are not sensative to directional distribution and calculated once.
+  const _gamma = BSF_GAMMA(derivs.nd1, userInput.price, userInput.iv, userInput.time);
+  const _vega  = BSF_VEGA(derivs.nd1, userInput.price, userInput.time);
+ 
+  // CALL SIDE
+  optionChain[0][0] = _calculatePrice(
+                                        "CALL", derivs.nsd_d1, derivs.nsd_d2, 
+                                        userInput.price, userInput.strike, userInput.time, 
+                                        userInput.rate, userInput.divYield
+                                     );
+
+  // Another way to represent delta is the normal distribution expected value.
+  optionChain[0][1] = derivs.nsd_d1;
+  optionChain[0][2] =_gamma;
+  optionChain[0][3] = BSF_THETA(
+                                  "CALL", derivs.nd1, derivs.nsd_d2, 
+                                  userInput.price, userInput.strike, userInput.time, 
+                                  userInput.rate, userInput.iv
+                               );
+  optionChain[0][4] = _vega;
+  optionChain[0][5] = BSF_RHO(
+                                "CALL", derivs.nsd_d2, 
+                                userInput.strike, userInput.time, userInput.rate
+                             );
+ 
+
+
+  // PUT SIDE
+  optionChain[1][0] = _calculatePrice(
+                                        "PUT", derivs.nsd_d1, derivs.nsd_d2, 
+                                        userInput.price, userInput.strike, userInput.time, 
+                                        userInput.rate, userInput.divYield
+                                     );
+
+  // Another way to represent delta is the normal distribution expected value.
+  optionChain[1][1] = derivs.nsd_d1 - 1;
+  optionChain[1][2] =_gamma;
+  optionChain[1][3] = BSF_THETA(
+                                  "PUT", derivs.nd1, derivs.nsd_d2, 
+                                  userInput.price, userInput.strike, userInput.time, 
+                                  userInput.rate, userInput.iv
+                               );
+  optionChain[1][4] = _vega;
+  optionChain[1][5] = BSF_RHO(
+                                "PUT", derivs.nsd_d2, 
+                                userInput.strike, userInput.time, userInput.rate
+                             );
+
+  return optionChain;
 }
 
 
@@ -310,55 +323,69 @@ function BSM_VEGA(nd1 = 0, price, strike, time, rate, iv, divYield){
  * @param rate      {float} 1 month interest rate
  * @param iv        {float} implied volatility
  * @param divYield  {float} divident yield, annualized. Sraped from FinViz.
- * @param fullQuote {bool | optional}  returns the full option quote. Default true.
+ * @param quote     {string | optional} default full quote. All greeks names and "price" options.
  * @param type      {bool | optional}  CALL | PUT
  *
  * @return {array} array of values to populate
  */
-function BSM_QUOTE(price, strike, time, rate, iv, divYield, fullQuote = true, type = "CALL"){  
-  var optionChain = [[],[]];
-  var d1, d2, nd1, nsd_d1, nsd_d2;
+function BSM_QUOTE(price, strike, time, rate, iv, divYield, quote = "", type = "CALL"){  
+  const _userInput = {
+    price: price,
+    striek: strike,
+    time: time,
+    rate: rate,
+    iv: iv,
+    divYield: divYield,
+    type: type.toUpperCase(),
+  };
+  const _derivatives = {
+    d1: 0,
+    d2: 0,
+    nd1: 0,
+    nsd_d1: 0,
+    nsd_d2: 0,
+  }
   
   // just in case...
   type = type.toUpperCase();
+  quote = type.toUpperCase();
 
   // calculate derivatives and normal distribution.
-  var _derivs = _calcDerivs(price, strike, time, rate, iv, divYield);
-  d1 = _derivs[0];
-  d2 = _derivs[1];
-  nd1 = _calculateND1(d1);
-  
-  // Delta is the same thing as normal distribution of `d1`
-  nsd_d1 = _normDistFunc(d1);
-  nsd_d2 = _normDistFunc(d2);
+  _derivatives.d1 = _calcuatD1(price, strike, time, rate, iv, divYield);
+  _derivatives.d2 = _calculateD2(_derivatives.d1, iv, time);
+  _derivatives.nd1 = _calculateND1(_derivatives.d1);
+  _derivatives.nsd_d1 = _normDistFunc(_derivatives.d1);
+  _derivatives.nsd_d2 = _normDistFunc(_derivatives.d2);
 
-  // return early with simple quote
-  if ( fullQuote === false ) {
-    var _price;
+  // compute 
+  switch (quote) {
+    case 'PRICE':
+      return _calculatePrice(
+                              type, 
+                              _derivatives.nsd_d1, 
+                              _derivatives.nsd_d2, 
+                              price, 
+                              strike, 
+                              time, 
+                              rate, 
+                              divYield
+                            );
+    case 'DELTA':
+      return type === "CALL" ? derivs.nsd_d1 : derivs.nsd_d1 - 1;
+    
+    case 'THETA':
+      return BSF_THETA(type, derivs.nd1, derivs.nsd_d2, price, strike, time, rate, iv);
+    
+    case 'GAMMA':
+      return BSF_GAMMA(derivs.nd1, price, iv, time);
+    
+    case 'VEGA':
+      return BSF_VEGA(derivs.nd1, price, time);
+    
+    case 'RHO':
+      return BSF_RHO(type, nsd_d2, strike, time, rate);
 
-    if( type === "CALL" ){
-      _price =  _calculatePrice("CALL", nsd_d1, nsd_d2, price, strike, time, rate, divYield);
-    } else {
-      _price =  _calculatePrice("PUT", nsd_d1, nsd_d2, price, strike, time, rate, divYield);
-    }
-
-    return _price;
+    default:
+      return _fullQuote(_userInput, _derivatives);
   }
-  
-  // the 2D array is necessary to return values in rows.
-  optionChain[0][0] = _calculatePrice("CALL", nsd_d1, nsd_d2, price, strike, time, rate, divYield);
-  optionChain[0][1] = nsd_d1;
-  optionChain[0][2] = BSF_GAMMA(nd1, price, iv, time);
-  optionChain[0][3] = BSF_THETA("CALL", nd1, nsd_d2, price, strike, time, rate, iv);
-  optionChain[0][4] = BSF_VEGA(nd1, price, time);
-  optionChain[0][5] = BSF_RHO("CALL", nsd_d2, strike, time, rate);
- 
-  optionChain[1][0] = _calculatePrice("PUT", nsd_d1, nsd_d2, price, strike, time, rate, divYield);
-  optionChain[1][1] = nsd_d1-1;
-  optionChain[1][2] = BSF_GAMMA(nd1, price, iv, time);
-  optionChain[1][3] = BSF_THETA("PUT", nd1, nsd_d2, price, strike, time, rate, iv);
-  optionChain[1][4] = BSF_VEGA(nd1, price, time);
-  optionChain[1][5] = BSF_RHO("PUT", nsd_d2, strike, time, rate);
-  
-  return optionChain;
 }

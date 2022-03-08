@@ -31,12 +31,13 @@ class Params {
    * FORMULA:
    * d1 - (sigma * sqrt(time))
    * 
+   * @param d1
+   * @param iv
+   * @param time
    * @returns {float}
    */
-  calculateD2(){
-    const d1 = this.calculateD1;
-
-    return d1 - this.iv * Math.sqrt(this.time);
+  calculateD2(d1, iv, time){
+    return d1 - iv * Math.sqrt(time);
   }
 
 

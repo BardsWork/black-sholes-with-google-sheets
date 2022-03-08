@@ -72,29 +72,24 @@ class NormalDistribution{
     // For non-standard NDist
     let z = (x - mean) / stdev;
   
-    if (z < 0)
-    {
+    if (z < 0){
       up = true;
       z = -z;
     }
   
-    if (ltone < z && (!up || utzero < z))
-    {
+    if (ltone < z && (!up || utzero < z)){
       value = !up * 1;
       return value;
     }
   
     y = 0.5 * z * z;
   
-    if (z <= con)
-    {
+    if (z <= con) {
       value = 0.5 - z * (p - q * y 
         / (y + a1 + b1 
           / (y + a2 + b2 
             / (y + a3))));
-    }
-    else
-    {
+    } else {
       value = r * Math.exp(-y) 
         / (z + c1 + d1 
           / (z + c2 + d2 
@@ -104,22 +99,23 @@ class NormalDistribution{
                   / (z + c6))))));
     }
   
-    if (!up)
+    if (!up){
       value = 1 - value;
+    }      
   
     return value;
   }
 
 
-  /**
-   * 
-   * @param x 
-   * @param mean 
-   * @param stdev 
-   * @param cumulative 
-   * @returns 
-   */
-  NDistJS(x, mean, stdev, cumulative) {
+/**
+ * 
+ * @param x 
+ * @param mean 
+ * @param stdev 
+ * @param cumulative {Boolean}
+ * @returns 
+ */
+  static NDistJS(x, mean, stdev, cumulative = true) {
     return cumulative 
         ? this._getNDistCDF(x, mean, stdev)
         : this._getNDistPDF(x, mean, stdev);
