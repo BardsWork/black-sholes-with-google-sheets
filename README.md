@@ -156,7 +156,9 @@ Instead of creating a tutorial, here are some I've found useful to install App S
 - [Comprehensive guide](https://spreadsheetpoint.com/google-sheets-script/)
 - [Video Tutorial](https://www.youtube.com/watch?v=Nd3DV_heK2Q)
 
-For a simple installation, follow the guide above and copy the `single_file.gs` content into App Scripts. This file is condensed to include all modules so you can start working right away. Otherwise, you can add each module in its own file. App Scripts auto include all files in a project and no import is necessary.
+> Currently, `index.gs` is the stable release. All classes have been moved to `./classes` folder for future development and implementation of a build system. Since GAS does not use `import` statement, the classes are not guaranteed to load in the correct order.
+
+For a simple installation, follow the guide above and copy the `index.gs` content into App Scripts. This file is condensed to include all modules so you can start working right away. Otherwise, you can add each module in its own file. App Scripts auto include all files in a project and no import is necessary.
 
 <br>
 
@@ -166,12 +168,12 @@ For a simple installation, follow the guide above and copy the `single_file.gs` 
 
 The file naming convention follow standard JS principals but you can name them as you wish. Please see description of each file below:
 
-| File                    | Description |
-| ----------------------- | ----------- | 
-| Params.gs               | A class to hold all user supplied parameters.<br>Includes derivative and Normal Distribution for parameters. |
-| NormalDistribution.gs   | Encompasses normal distribution formula. |
-| functions.gs            | Functions that are exposed to Google Sheets client. |
-| single_file.gs          | A single file that includes all above for a quick copy/paste into Google Sheets. |
+| File                  | Description                                                                      |
+| --------------------- | -------------------------------------------------------------------------------- |
+| Derivatives.gs        | Encapsulates all derivative math.                                                |
+| Greeks.gs             | Encapsulates all option greeks math.                                             |
+| NormalDistribution.gs | JS implementation of normal distribution function (NORMDIST).                    |
+| index.gs              | A single file that includes all above for a quick copy/paste into Google Sheets. |
 
 <br>
 
@@ -203,39 +205,56 @@ There are two primary ways to interact with the script:
 1. Retrieve a contracts full quote, which includes price + greeks, for both Calls and Puts. 
 2. Retrieve specific information, as needed (ex: get Gamma for Calls or Price for Puts).
 
-Please see documentation below for function params & return.
+<br>
+
+### BSM_QUOTE(price, strike, time, rate, iv, divYield, quote = "", type = "CALL")
 
 <br>
 
-### BSM_QUOTE(price, strike, time, rate, iv, divYield)
+Default return of a 2D array (two rows) with price and all the Greeks for put and call. Specifying `quote` will trim the output to the the specified request. Table below lists all valid input.
 
 <br>
 
-Returns a 2D array (two rows) with price and all the Greeks for put and call.
+#### `Quote Input`
+
+
+| Name    | Description                                                                                           |
+| ------- | ----------------------------------------------------------------------------------------------------- |
+| default | *array*<br>Returns the full quote for both sides of the contract (CALL\|PUT).                         |
+| price   | *float*<br>Returns the price of the contract. `type` defaults to CALL.                                |
+| delta   | *float*<br>Returns the Delta value of the contract. `type` defaults to CALL.                          |
+| gamma   | *float*<br>Returns the Gamma value of the contract. Bi directional (CALL\|PUT) does not change value. |
+| vega    | *float*<br>Returns the Vega value of the contract. Bi directional (CALL\|PUT) does not change value.  |
+| rho     | *float*<br>Returns the Rho value of the contract. `type` defaults to CALL.                            |
+| theta   | *float*<br>Returns the Theta value of the contract. `type` defaults to CALL.                          |
 
 <br>
 
-| Name      | Description |
-| --------- | ----------- |
-| price     | *float*<br>Spot price of underlying stock. |
-| strike    | *float*<br>Selected option strike. |
-| time      | *float*<br>Time to maturity (expiry - today) / 365. |
-| rate      | *float*<br>Suggested default: 10 year bond rate ("TNX"). |
-| iv        | *float*<br>Implied volatility from your broker or Yahoo Finance. |
-| divYield  | *float*<br>Annualized dividend yield for the company. |
+#### `Function Arguments`
+
+| Name     | Description                                                                                                     |
+| -------- | --------------------------------------------------------------------------------------------------------------- |
+| price    | *float*<br>Spot price of underlying stock.                                                                      |
+| strike   | *float*<br>Selected option strike.                                                                              |
+| time     | *float*<br>Time to maturity (expiry - today) / 365.                                                             |
+| rate     | *float*<br>Suggested default: 10 year bond rate ("TNX").                                                        |
+| iv       | *float*<br>Implied volatility from your broker or Yahoo Finance.                                                |
+| divYield | *float*<br>Annualized dividend yield for the company.                                                           |
+| quote    | *string*<br>Default return of full option contract. Can specify to return subsect of contract. See table above. |
+| type     | *string*<br>Default CALL but can be specified when retrieving subsect data.                                     |
 
 <br>
 
 
-_Return format:_
-|       | Col 1     | Col 2   | Col 3   | Col 4   | Col 5   | Col 6   |
-| ----- | --------- | ------- | ------- | ------- | ------- | ------- |
-| Row 1 | CALL PRICE| DELTA   | GAMMA   | Theta   | VEGA    | RHO     |
-| Row 2 | PUT PRICE | DELTA   | GAMMA   | Theta   | VEGA    | RHO     |
+#### `_Return format:_`
+|       | Col 1      | Col 2 | Col 3 | Col 4 | Col 5 | Col 6 |
+| ----- | ---------- | ----- | ----- | ----- | ----- | ----- |
+| Row 1 | CALL PRICE | DELTA | GAMMA | Theta | VEGA  | RHO   |
+| Row 2 | PUT PRICE  | DELTA | GAMMA | Theta | VEGA  | RHO   |
 
 <br>
 
-_Return types:_
+#### `_Return types:_`
 | Price | Delta | Gamma | Theta | Vega  | Rho   |
 | ----- | ----- | ----- | ----- | ----- | ----- |
 | float | float | float | float | float | float |
@@ -246,7 +265,7 @@ _Return types:_
 
 <br>
 
-### BSM_PRICE(type, price, strike, time, rate, iv, divYield)
+### _calculatePrice(type, nsd_d1, nsd_d2, price, strike time, rate, divYield)
 
 <br>
 
@@ -254,22 +273,23 @@ Calculates an approximate price of an option contract.
 
 <br>
 
-| Name      | Description |
-| --------- | ----------- |
-| price     | *string*<br>Specify `CALL` or `PUT`. Default is `CALL`. |
-| price     | *float*<br>Spot price of underlying stock. |
-| strike    | *float*<br>Selected option strike. |
-| time      | *float*<br>Time to maturity (expiry - today) / 365. |
-| rate      | *float*<br>Suggested default: 10 year bond rate ("TNX"). |
-| iv        | *float*<br>Implied volatility from your broker or Yahoo Finance. |
-| divYield  | *float*<br>Annualized dividend yield for the company. |
+| Name     | Description                                                       |
+| -------- | ----------------------------------------------------------------- |
+| type     | *string*<br>Specify `CALL` or `PUT`. Default `CALL`.              |
+| nsd_d1   | *float*<br>Normal Standard Distribution of the first derivative.  |
+| nsd_d2   | *float*<br>Normal Standard Distribution of the second derivative. |
+| price    | *float*<br>Spot price of underlying stock.                        |
+| strike   | *float*<br>Selected option strike.                                |
+| time     | *float*<br>Time to maturity (expiry - today) / 365.               |
+| rate     | *float*<br>Suggested default: 10 year bond rate ("TNX").          |
+| divYield | *float*<br>Annualized dividend yield for the company.             |
 
 <br>
 
 _Return:_
-| Name   | Type    |
-| ------ | ------- |
-| price  | *float* |
+| Name  | Type    |
+| ----- | ------- |
+| price | *float* |
 
 <br>
 
@@ -277,37 +297,7 @@ _Return:_
 
 <br>
 
-### BSM_DELTA(price, strike, time, rate, iv, divYield)
-
-<br>
-
-Delta is the theoretical estimate of how much an option's value may change given a $1 move UPup or down in the underlying security. The Delta values range from -1 to +1, with 0 representing an option where the premium barely moves relative to price changes in the underlying stock.
-
-<br>
-
-| Name      | Description |
-| --------- | ----------- |
-| price     | *float*<br>Spot price of underlying stock. |
-| strike    | *float*<br>Selected option strike. |
-| time      | *float*<br>Time to maturity (expiry - today) / 365. |
-| rate      | *float*<br>Suggested default: 10 year bond rate ("TNX"). |
-| iv        | *float*<br>Implied volatility from your broker or Yahoo Finance. |
-| divYield  | *float*<br>Annualized dividend yield for the company. |
-
-<br>
-
-_Return:_
-| Name   | Type    |
-| ------ | ------- |
-| delta  | *float* |
-
-<br>
-
------------------------
-
-<br>
-
-### BSM_GAMMA(price, strike, time, rate, iv, divYield)
+### _calcGamma(nd1, price, iv, time)
 
 <br>
 
@@ -315,21 +305,19 @@ Gamma represents the rate of change between an option's Delta and the underlying
 
 <br>
 
-| Name      | Description |
-| --------- | ----------- |
-| price     | *float*<br>Spot price of underlying stock. |
-| strike    | *float*<br>Selected option strike. |
-| time      | *float*<br>Time to maturity (expiry - today) / 365. |
-| rate      | *float*<br>Suggested default: 10 year bond rate ("TNX"). |
-| iv        | *float*<br>Implied volatility from your broker or Yahoo Finance. |
-| divYield  | *float*<br>Annualized dividend yield for the company. |
+| Name  | Description                                                      |
+| ----- | ---------------------------------------------------------------- |
+| nd1   | *float*<br>Probability density of the normal distribution.       |
+| price | *float*<br>Spot price of underlying stock.                       |
+| iv    | *float*<br>Implied volatility from your broker or Yahoo Finance. |
+| time  | *float*<br>Time to maturity (expiry - today) / 365.              |
 
 <br>
 
 _Return:_
-| Name   | Type    |
-| ------ | ------- |
-| gamma  | *float* |
+| Name  | Type    |
+| ----- | ------- |
+| gamma | *float* |
 
 <br>
 
@@ -337,21 +325,22 @@ _Return:_
 
 <br>
 
-### BSM_THETA(type, price, strike, time, rate, iv, divYield)
+### _calcTheta(type, nd1, nsd_d2, price, strike, time, rate, iv)
 
 Theta represents, in theory, how much an option's premium may decay each day with all other factors remaining the same. 
 
 <br>
 
-| Name      | Description |
-| --------- | ----------- |
-| price     | *string*<br>Specify `CALL` or `PUT`. Default is `CALL`. |
-| price     | *float*<br>Spot price of underlying stock. |
-| strike    | *float*<br>Selected option strike. |
-| time      | *float*<br>Time to maturity (expiry - today) / 365. |
-| rate      | *float*<br>Suggested default: 10 year bond rate ("TNX"). |
-| iv        | *float*<br>Implied volatility from your broker or Yahoo Finance. |
-| divYield  | *float*<br>Annualized dividend yield for the company. |
+| Name   | Description                                                       |
+| ------ | ----------------------------------------------------------------- |
+| type   | *string*<br>Specify `CALL` or `PUT`. Default `CALL`.              |
+| nd1    | *float*<br>Probability density of the normal distribution.        |
+| nsd_d2 | *float*<br>Normal Standard Distribution of the second derivative. |
+| price  | *float*<br>Spot price of underlying stock.                        |
+| strike | *float*<br>Selected option strike.                                |
+| time   | *float*<br>Time to maturity (expiry - today) / 365.               |
+| rate   | *float*<br>Annualized dividend yield for the company.             |
+| iv     | *float*<br>Annualized dividend yield for the company.             |
 
 <br>
 
@@ -366,7 +355,7 @@ _Return:_
 
 <br>
 
-### BSM_VEGA(price, strike, time, rate, iv, divYield)
+### _calcVega(nd1, price, strike, time, rate, iv, divYield)
 
 <br>
 
@@ -374,21 +363,22 @@ Vega measures the amount of increase or decrease in an option premium based on a
 
 <br>
 
-| Name      | Description |
-| --------- | ----------- |
-| price     | *float*<br>Spot price of underlying stock. |
-| strike    | *float*<br>Selected option strike. |
-| time      | *float*<br>Time to maturity (expiry - today) / 365. |
-| rate      | *float*<br>Suggested default: 10 year bond rate ("TNX"). |
-| iv        | *float*<br>Implied volatility from your broker or Yahoo Finance. |
-| divYield  | *float*<br>Annualized dividend yield for the company. |
+| Name     | Description                                                      |
+| -------- | ---------------------------------------------------------------- |
+| nd1      | *float*<br>Probability density of the normal distribution.       |
+| price    | *float*<br>Spot price of underlying stock.                       |
+| strike   | *float*<br>Selected option strike.                               |
+| time     | *float*<br>Time to maturity (expiry - today) / 365.              |
+| rate     | *float*<br>Suggested default: 10 year bond rate ("TNX").         |
+| iv       | *float*<br>Implied volatility from your broker or Yahoo Finance. |
+| divYield | *float*<br>Annualized dividend yield for the company.            |
 
 <br>
 
 _Return:_
-| Name  | Type    |
-| ----- | ------- |
-| vega  | *float* |
+| Name | Type    |
+| ---- | ------- |
+| vega | *float* |
 
 <br>
 
@@ -396,7 +386,7 @@ _Return:_
 
 <br>
 
-### BSM_RHO(type, price, strike, time, rate, iv, divYield)
+### _calcRho(type, nsd_d2, strike, time, rate)
 
 <br>
 
@@ -404,22 +394,21 @@ Rho measures an option's sensitivity to changes in the risk-free rate of interes
 
 <br>
 
-| Name      | Description |
-| --------- | ----------- |
-| price     | *string*<br>Specify `CALL` or `PUT`. Default is `CALL`. |
-| price     | *float*<br>Spot price of underlying stock. |
-| strike    | *float*<br>Selected option strike. |
-| time      | *float*<br>Time to maturity (expiry - today) / 365. |
-| rate      | *float*<br>Suggested default: 10 year bond rate ("TNX"). |
-| iv        | *float*<br>Implied volatility from your broker or Yahoo Finance. |
-| divYield  | *float*<br>Annualized dividend yield for the company. |
+| Name   | Description                                                       |
+| ------ | ----------------------------------------------------------------- |
+| type   | *string*<br>Specify `CALL` or `PUT`. Default `CALL`.              |
+| nsd_d2 | *float*<br>Normal Standard Distribution of the second derivative. |
+| strike | *float*<br>Selected option strike.                                |
+| time   | *float*<br>Time to maturity (expiry - today) / 365.               |
+| rate   | *float*<br>Suggested default: 10 year bond rate ("TNX").          |
+
 
 <br>
 
 _Return:_
-| Name  | Type    |
-| ----- | ------- |
-| rho   | *float* |
+| Name | Type    |
+| ---- | ------- |
+| rho  | *float* |
 
 <br>
 
