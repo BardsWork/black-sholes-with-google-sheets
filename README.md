@@ -447,32 +447,19 @@ Distributed under the MIT License. See `LICENSE.txt` for more information.
 <p align="right">(<a href="#top">back to top</a>)</p>
 
 
-
-<!-- CONTACT -->
-## Contact
-
-If you'd like to get in contact, the best way would probably be [twitter][@twitter-handle] or [open an issue][issues-url].
-
-
-<p align="right">(<a href="#top">back to top</a>)</p>
-
-
-
-
 <!-- MARKDOWN LINKS & IMAGES -->
 <!-- https://www.markdownguide.org/basic-syntax/#reference-style-links -->
-[contributors-shield]: https://img.shields.io/github/contributors/BardsWork/bsm-sheets.svg?style=for-the-badge
-[contributors-url]: https://github.com/BardsWork/bsm-sheets/graphs/contributors
-[forks-shield]: https://img.shields.io/github/forks/BardsWork/bsm-sheets.svg?style=for-the-badge
-[forks-url]: https://github.com/BardsWork/bsm-sheets/network/members
-[stars-shield]: https://img.shields.io/github/stars/BardsWork/bsm-sheets.svg?style=for-the-badge
-[stars-url]: https://github.com/BardsWork/bsm-sheets/stargazers
-[issues-shield]: https://img.shields.io/github/issues/BardsWork/bsm-sheets.svg?style=for-the-badge
-[issues-url]: https://github.com/BardsWork/bsm-sheets/issues
-[license-shield]: https://img.shields.io/github/license/BardsWork/bsm-sheets.svg?style=for-the-badge
-[license-url]: https://github.com/BardsWork/bsm-sheets/blob/main/LICENSE
-[docs-url]: https://github.com/BardsWork/bsm-sheets
+[contributors-shield]: https://img.shields.io/github/contributors/BardsWork/black-sholes-with-google-sheets.svg?style=for-the-badge
+[contributors-url]: https://github.com/BardsWork/black-sholes-with-google-sheets/graphs/contributors
+[forks-shield]: https://img.shields.io/github/forks/BardsWork/black-sholes-with-google-sheets.svg?style=for-the-badge
+[forks-url]: https://github.com/BardsWork/black-sholes-with-google-sheets/network/members
+[stars-shield]: https://img.shields.io/github/stars/BardsWork/black-sholes-with-google-sheets.svg?style=for-the-badge
+[stars-url]: https://github.com/BardsWork/black-sholes-with-google-sheets/stargazers
+[issues-shield]: https://img.shields.io/github/issues/BardsWork/black-sholes-with-google-sheets.svg?style=for-the-badge
+[issues-url]: https://github.com/BardsWork/black-sholes-with-google-sheets/issues
+[license-shield]: https://img.shields.io/github/license/BardsWork/black-sholes-with-google-sheets.svg?style=for-the-badge
+[license-url]: https://github.com/BardsWork/black-sholes-with-google-sheets/blob/main/LICENSE
+[docs-url]: https://github.com/BardsWork/black-sholes-with-google-sheets
 [demo-url]: https://docs.google.com/spreadsheets/d/e/2PACX-1vQD9kuzgQscJvd3i1dpvPIv7z4UCZ6HyHy3v_VGM449rp1JgG7No2_i8QV4IW87M-tIllyZCC6ng0FX/pubhtml?gid=4&single=true
 [product-screenshot]: images/screenshot.png
-[@twitter-handle]: https://twitter.com/bardswork
 [@github-url]: https://github.com/BardsWork
